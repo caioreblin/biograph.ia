@@ -54,7 +54,7 @@ arquivo certo mais vezes e mais rápido do que a busca nativa do Drive.
 - Conta Google pessoal do desenvolvedor com um Drive cheio, e uma pasta raiz escolhida.
   Recomendo usar o próprio "Meu Drive" se tiver até cerca de 20 mil arquivos
   suportados, porque isso simplifica a comparação justa.
-- Python 3.12 instalado (`winget install Python.Python.3.12`) e desativado o alias da
+- Python 3.14 (já instalado pelo Python Install Manager, `py -3.14`). Opcional: desativar o alias da
   Store em *Configurações > Aplicativos > Aliases de execução*.
 - Conta no Supabase e um projeto no plano grátis, criado na tarefa 3.
 - Um cronômetro, ou gravação de tela com `Win+Alt+R` (Xbox Game Bar), para a avaliação.
@@ -421,7 +421,7 @@ usuária de teste, indexar a pasta dela e fazer a sessão.
 
 ## Verificação (depois da implementação, quando você pedir)
 
-- Ambiente: `python --version` mostra 3.12 e `pip install -r poc/requirements.txt`
+- Ambiente: `poc/.venv/Scripts/python --version` mostra 3.14 e `pip install -r poc/requirements.txt`
   instala sem erro.
 - Banco: `schema.sql` aplicado no SQL Editor, e
   `select to_tsvector('pt_unaccent','Certidões')` devolve `'certido'`.

@@ -1,0 +1,21 @@
+# Testado com Python 3.14.2 (venv em poc/.venv)
+
+# Drive API + OAuth (fluxo Desktop)
+google-api-python-client==2.200.0
+google-auth-oauthlib==1.4.1
+
+# Postgres (Supabase via Session pooler)
+psycopg[binary]==3.3.6
+
+# Extração de texto
+pypdf==6.19.0
+python-docx==1.2.0
+
+# Geocodificação (Nominatim)
+requests==2.34.2
+
+# Configuração
+python-dotenv==1.2.3
+
+# Tela de busca (descartável)
+streamlit==1.64.0
