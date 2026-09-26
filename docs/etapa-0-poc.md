@@ -298,7 +298,7 @@ def db_size_bytes(conn) -> int
    acervo indexado.
 8. O relatório mostra os bytes médios por arquivo, que é a entrada para revisar a conta
    de 5 KB por arquivo do escopo.
-9. `avaliacao/resultados.csv` tem as 20 linhas (10 buscas × 2 ferramentas) e
+9. `avaliacao/resultados.csv` tem as 14 linhas (7 buscas × 2 ferramentas) e
    `relatorio.md` traz a decisão do portão.
 10. `git ls-files` não contém `credentials.json`, `token.json` nem `.env`.
 
@@ -323,6 +323,11 @@ Perder para o Drive é um resultado válido da PoC.
   da pasta raiz indexada. Se não estiver, troque a busca antes do commit.
 - **Formato de `buscas.md`:** id, descrição do que se procura, primeira consulta exata
   (a mesma nas duas ferramentas), tipo esperado, id e caminho do alvo.
+- **Campos de diagnóstico (não entram no placar):**
+  - *Consulta descritiva*: como o avaliador gostaria de buscar. Roda só no app, numa
+    rodada separada, depois das 20 medições.
+  - *Sei o nome do arquivo?* (sim/não): o relatório separa as vitórias por esse
+    campo, porque buscas pelo nome conhecido tendem a empatar.
 
 **Condução (tarefa 13):**
 - Na véspera, confirmar que o Supabase está ativo e o `token.json` é válido, e fazer uma
@@ -355,18 +360,28 @@ Perder para o Drive é um resultado válido da PoC.
 ## 10. Critério de corte
 
 "Acerto" é o app achar o alvo em até 3 tentativas e 120 s. A regra segue o portão de
-`prompts-planos.md` e acrescenta um piso de acertos:
+`prompts-planos.md` e acrescenta um piso de acertos.
 
-| Resultado | Decisão |
+O conjunto final tem **7 buscas**, por decisão do avaliador (veja `avaliacao/buscas.md`).
+Os limites mantêm as proporções do portão original (60% de vitórias e 70% de acertos
+para seguir; 30% de vitórias ou 50% de acertos para parar):
+
+| Resultado com 7 buscas | Decisão |
 |---|---|
-| App vence **≥ 6** e acerta **≥ 7 de 10** | A tese se sustenta. Seguir para a Etapa 1. |
-| App vence **4 ou 5**, ou acerta **6** | Investigar as derrotas (extração, ranqueamento ou tipo de arquivo), corrigir e repetir **uma vez** com **10 buscas novas**, congeladas do mesmo jeito. |
-| App vence **≤ 3**, ou acerta **≤ 5** | **A tese não se sustenta.** O problema é de tese, não de execução. Reavaliar o cenário antes de gastar as 400 h. |
+| App vence **≥ 5** e acerta **≥ 5** | A tese se sustenta. Seguir para a Etapa 1. |
+| App vence **3 ou 4**, ou acerta **4** | Investigar as derrotas (extração, ranqueamento ou tipo de arquivo), corrigir e repetir **uma vez** com buscas novas, congeladas do mesmo jeito. |
+| App vence **≤ 2**, ou acerta **≤ 3** | **A tese não se sustenta.** O problema é de tese, não de execução. Reavaliar o cenário antes de gastar as 400 h. |
 
 O piso de acertos existe porque ganhar do Drive achando só metade dos arquivos não
 entrega produto. O H1 pede 80% com contexto; sem contexto, 70% é o mínimo razoável.
 
-**Recomendação:** se o resultado cair perto das fronteiras (6 ou 7 vitórias), repita
+**Previsão registrada antes do teste:** 4 das 7 buscas são fotos sem nome conhecido
+(B02, B03, B06, B07), e a PoC não vê o conteúdo da imagem nem tem contexto do
+usuário. A expectativa é de 3 ou 4 acertos. Se isso se confirmar, o relatório deve
+separar "falha da tese" de "falha por falta de contexto ou IA em fotos", o que é
+argumento para a Etapa 5 ou a Fase 2 no portão de decisão.
+
+**Recomendação:** se o resultado cair perto das fronteiras (4 ou 5 vitórias), repita
 com outra pessoa antes da Etapa 1. Custa cerca de 3 h: adicionar o e-mail dela como
 usuária de teste, indexar a pasta dela e fazer a sessão.
 
