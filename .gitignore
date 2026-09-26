@@ -1,0 +1,16 @@
+# Segredos
+.env
+credentials.json
+token.json
+.streamlit/secrets.toml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
