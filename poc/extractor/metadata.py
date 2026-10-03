@@ -66,7 +66,7 @@ def normalize_name(name: str) -> str:
     'IMG-20260113-WA0134.jpg' -> 'IMG 20260113 WA0134 jpg WA 0134'
     'WhatsApp Image.jpeg'     -> 'WhatsApp Image jpeg Whats App'
     """
-    base = re.sub(r"[_\-.+()\[\]{},;]+", " ", name).split()
+    base = re.sub(r"[_\-.+()\[\]{},;/:\\]+", " ", name).split()
     split = " ".join(base)
     split = re.sub(r"(?<=[a-zà-ÿ])(?=[A-ZÀ-Þ])", " ", split)  # camelCase
     split = re.sub(r"(?<=[^\W\d_])(?=\d)|(?<=\d)(?=[^\W\d_])", " ", split)  # letra|dígito
