@@ -9,9 +9,9 @@ import time
 from dataclasses import dataclass
 from decimal import Decimal
 
-import psycopg
 import requests
-from psycopg.types.json import Jsonb
+
+from .db import Connection, jsonb
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 MIN_INTERVAL_S = 1.1  # folga sobre o limite de 1 req/s
@@ -19,17 +19,14 @@ TIMEOUT_S = 10
 
 _last_request = 0.0
 
-
 @dataclass(frozen=True)
 class Place:
     city: str | None
     state: str | None  # nome completo: "Santa Catarina"
     state_code: str | None  # sigla: "SC"
 
-
 def _round(value: float) -> Decimal:
     return Decimal(str(round(value, 2)))
-
 
 def _place_from_raw(raw: dict | None) -> Place | None:
     address = (raw or {}).get("address") or {}
@@ -42,14 +39,12 @@ def _place_from_raw(raw: dict | None) -> Place | None:
     iso = address.get("ISO3166-2-lvl4", "")
     return Place(city=city, state=address.get("state"), state_code=iso.split("-")[-1] if "-" in iso else None)
 
-
 def _throttle() -> None:
     global _last_request
     wait = MIN_INTERVAL_S - (time.monotonic() - _last_request)
     if wait > 0:
         time.sleep(wait)
     _last_request = time.monotonic()
-
 
 def _fetch(lat: Decimal, lon: Decimal, contact_email: str) -> dict | None:
     """Consulta o Nominatim. None = falha temporária (não deve ir para o cache)."""
@@ -68,11 +63,10 @@ def _fetch(lat: Decimal, lon: Decimal, contact_email: str) -> dict | None:
         return None
     return resp.json()  # {"error": "Unable to geocode"} no mar etc. também é cacheado
 
-
-def reverse(conn: psycopg.Connection, lat: float, lon: float, contact_email: str) -> Place | None:
+def reverse(conn: Connection, lat: float, lon: float, contact_email: str) -> Place | None:
     """Cidade e estado da coordenada: cache primeiro, depois Nominatim.
 
-    Grava no cache sem dar commit; use uma conexão em autocommit ou faça o commit.
+    A conexão é em autocommit: o cache fica gravado na hora.
     """
     lat_r, lon_r = _round(lat), _round(lon)
     row = conn.execute(
@@ -87,7 +81,7 @@ def reverse(conn: psycopg.Connection, lat: float, lon: float, contact_email: str
     place = _place_from_raw(raw)
     conn.execute(
         """insert into geocode_cache (lat_r, lon_r, city, state, raw)
-           values (%s, %s, %s, %s, %s) on conflict do nothing""",
-        (lat_r, lon_r, place and place.city, place and place.state, Jsonb(raw)),
+           values (%s, %s, %s, %s, %s::jsonb) on conflict do nothing""",
+        (lat_r, lon_r, place and place.city, place and place.state, jsonb(raw)),
     )
     return place

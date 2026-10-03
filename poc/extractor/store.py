@@ -3,12 +3,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-import psycopg
-from psycopg.types.json import Jsonb
-
+from .db import Connection, jsonb
 from .geocode import Place
 from .metadata import DateSource, FileMeta
-
 
 @dataclass
 class FileRecord:
@@ -25,14 +22,12 @@ class FileRecord:
     error: str | None = None
     extra_metadata: dict | None = None  # ex.: nº de páginas
 
-
-def load_index_state(conn: psycopg.Connection, owner: str) -> dict[str, tuple[datetime, str]]:
+def load_index_state(conn: Connection, owner: str) -> dict[str, tuple[datetime, str]]:
     """drive_file_id -> (drive_modified_at, status) do que já está indexado."""
     rows = conn.execute(
         "select drive_file_id, drive_modified_at, status from files where owner = %s", (owner,)
     ).fetchall()
     return {r[0]: (r[1], r[2]) for r in rows}
-
 
 _UPSERT = """
 insert into files (
@@ -44,7 +39,7 @@ insert into files (
   %(owner)s, %(drive_file_id)s, %(name)s, %(name_search)s, %(path)s, %(mime_type)s, %(kind)s,
   %(size_bytes)s, %(web_view_link)s, %(drive_created_at)s, %(drive_modified_at)s, %(captured_at)s,
   %(doc_created_at)s, %(effective_date)s, %(effective_date_source)s, %(city)s, %(state)s,
-  %(metadata)s, %(search_meta)s, %(extracted_text)s, %(text_truncated)s, %(status)s, %(error)s, now()
+  %(metadata)s::jsonb, %(search_meta)s, %(extracted_text)s, %(text_truncated)s, %(status)s, %(error)s, now()
 )
 on conflict (owner, drive_file_id) do update set
   name = excluded.name, name_search = excluded.name_search, path = excluded.path,
@@ -58,8 +53,7 @@ on conflict (owner, drive_file_id) do update set
   status = excluded.status, error = excluded.error, indexed_at = now()
 """
 
-
-def upsert_file(conn: psycopg.Connection, rec: FileRecord) -> None:
+def upsert_file(conn: Connection, rec: FileRecord) -> None:
     m = rec.meta
     metadata = {**m.metadata, **(rec.extra_metadata or {})}
     if rec.place and rec.place.state_code:
@@ -72,26 +66,23 @@ def upsert_file(conn: psycopg.Connection, rec: FileRecord) -> None:
         "captured_at": m.captured_at, "doc_created_at": rec.doc_created_at,
         "effective_date": rec.effective_date, "effective_date_source": rec.effective_date_source,
         "city": rec.place and rec.place.city, "state": rec.place and rec.place.state,
-        "metadata": Jsonb(metadata), "search_meta": rec.search_meta,
+        "metadata": jsonb(metadata), "search_meta": rec.search_meta,
         "extracted_text": rec.text, "text_truncated": rec.text_truncated,
         "status": rec.status, "error": rec.error,
     })
 
-
-def delete_missing(conn: psycopg.Connection, owner: str, seen_ids: set[str]) -> int:
+def delete_missing(conn: Connection, owner: str, seen_ids: set[str]) -> int:
     """Remove o que não apareceu na listagem completa (apagado, movido ou na lixeira)."""
     cur = conn.execute(
-        "delete from files where owner = %s and not (drive_file_id = any(%s))",
+        "delete from files where owner = %s and not (drive_file_id = any(%s::text[]))",
         (owner, list(seen_ids)),
     )
     return cur.rowcount
 
-
-def db_size_bytes(conn: psycopg.Connection) -> int:
+def db_size_bytes(conn: Connection) -> int:
     return conn.execute("select pg_database_size(current_database())").fetchone()[0]
 
-
-def files_size_stats(conn: psycopg.Connection, owner: str) -> tuple[int, int]:
+def files_size_stats(conn: Connection, owner: str) -> tuple[int, int]:
     """(nº de arquivos do dono, bytes da tabela files com índices e TOAST)."""
     return conn.execute(
         "select (select count(*) from files where owner = %s), pg_total_relation_size('files')",

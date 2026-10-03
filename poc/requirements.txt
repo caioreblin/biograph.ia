@@ -5,7 +5,7 @@ google-api-python-client==2.200.0
 google-auth-oauthlib==1.4.1
 
 # Postgres (Supabase via Session pooler)
-psycopg[binary]==3.3.6
+pg8000==1.31.5  # Python puro: o Smart App Control bloqueia a DLL do psycopg-binary
 
 # Extração de texto
 pypdf==6.19.0

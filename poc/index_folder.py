@@ -13,10 +13,9 @@ import time
 from collections import Counter
 from pathlib import Path
 
-import psycopg
 from dotenv import load_dotenv
 
-from extractor import drive, geocode
+from extractor import db, drive, geocode
 from extractor import metadata as md
 from extractor import text as tx
 from extractor.searchdoc import build_search_meta
@@ -27,7 +26,6 @@ from extractor.store import (
 HERE = Path(__file__).resolve().parent
 SIZE_CHECK_EVERY = 200
 PROGRESS_EVERY = 25
-
 
 def extract_text(svc, meta: md.FileMeta, max_download: int, max_text: int):
     """(TextResult | None, status, error) para um arquivo suportado."""
@@ -47,7 +45,6 @@ def extract_text(svc, meta: md.FileMeta, max_download: int, max_text: int):
     if result.is_textless:
         return result, "sem_texto", "sem texto extraível (provável PDF escaneado)" if result.pages else None
     return result, "ok", None
-
 
 def build_record(conn, svc, owner: str, meta: md.FileMeta, cfg: dict) -> FileRecord:
     try:
@@ -69,7 +66,6 @@ def build_record(conn, svc, owner: str, meta: md.FileMeta, cfg: dict) -> FileRec
         place=place,
         extra_metadata={"pages": result.pages} if result and result.pages else None,
     )
-
 
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
@@ -104,7 +100,8 @@ def main() -> int:
     seen: set[str] = set()
     stop_reason = None
 
-    with psycopg.connect(os.environ["DATABASE_URL"], autocommit=True) as conn:
+    ca_cert = HERE / os.getenv("SUPABASE_CA_CERT", "supabase-ca.crt")
+    with db.connect(os.environ["DATABASE_URL"], ca_cert) as conn:
         state = load_index_state(conn, owner)
         print(f"Indexando '{args.folder}' de {owner} ({len(state)} arquivos já no índice)")
 
@@ -131,7 +128,7 @@ def main() -> int:
             rec = build_record(conn, svc, owner, meta, cfg)
             try:
                 upsert_file(conn, rec)
-            except psycopg.Error as e:
+            except db.Error as e:
                 rec.status, rec.error, rec.text = "erro", f"falha ao gravar: {e}"[:500], None
                 upsert_file(conn, rec)
             statuses[rec.status] += 1
@@ -173,7 +170,6 @@ def main() -> int:
         for name, err in errors:
             print(f"  - {name}: {err}")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
