@@ -18,6 +18,12 @@ MIN_TEXT_CHARS = 100
 
 _LOCAL_TZ = timezone(timedelta(hours=-3))
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+# Ligaduras que o pypdf devolve como um caractere só ("Identiﬁcação", "NormaƟva").
+# Ɵ e Ʃ são como o Word/Calibri codifica "ti" e "tt" ao exportar PDF.
+_LIGATURES = str.maketrans({
+    "ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi", "ﬄ": "ffl", "ﬅ": "ft", "ﬆ": "st",
+    "Ɵ": "ti", "Ʃ": "tt",
+})
 
 
 @dataclass
@@ -36,8 +42,8 @@ class TextResult:
 
 
 def clean_text(text: str) -> str:
-    """Remove caracteres de controle (o Postgres recusa \\x00) e espaços redundantes."""
-    text = _CONTROL.sub(" ", text)
+    """Desfaz ligaduras, remove caracteres de controle (o Postgres recusa \\x00) e espaços redundantes."""
+    text = _CONTROL.sub(" ", text.translate(_LIGATURES))
     text = re.sub(r"[ \t ]+", " ", text)
     text = re.sub(r"\s*\n\s*\n\s*", "\n\n", text)
     return text.strip()

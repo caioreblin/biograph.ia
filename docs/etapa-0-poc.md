@@ -420,6 +420,30 @@ usuária de teste, indexar a pasta dela e fazer a sessão.
 - **Dados no Supabase (D1):** a PoC já coloca dados pessoais em um provedor terceiro.
   Nas duas fases, a região do projeto é uma decisão em aberto (escopo §13).
 
+## 13. Limitações conhecidas da busca (encontradas na Tarefa 11, para a Etapa 4)
+
+Ficam registradas e **não foram corrigidas** depois do congelamento das buscas, para
+não ajustar a busca de olho na avaliação.
+
+- **Singular e plural em -ão/-ões/-ães e -m/-ns.** O radical do Postgres não junta essas
+  formas, com ou sem acento: "certidões" não casa com `certidao`, "declarações" não casa
+  com `declaracao`, "viagem" não casa com `viagens`. Num teste com 30 pares, 22 casaram
+  na ordem atual (sem acento antes do radical) e 20 na ordem inversa.
+  - *Etapa 4:* expandir a consulta com as variantes de singular e plural, ou usar um
+    dicionário como o Hunspell pt_BR.
+- **Palavras dentro de URL e e-mail.** O parser guarda `www.unicesumar.edu.br` como um
+  token só, então buscar `unicesumar` não acha o documento.
+  - *Etapa 4:* trocar `. / @ :` por espaço antes de gerar o vetor.
+- **Documentos-modelo repetidos** (21 notas fiscais quase iguais). Nenhuma palavra
+  distingue uma da outra; o que as separa são números e valores, e o ranqueamento entre
+  elas é praticamente aleatório.
+  - *Etapa 4:* indexar números relevantes (valores, datas, CNPJ) e os filtros de
+    período e pasta.
+
+Corrigido na Tarefa 11, porque é bug de extração e não de ranqueamento: as **ligaduras
+de PDF** (`ﬁ`, `ﬂ`, `ﬀ`, e `Ɵ`/`Ʃ` do Calibri) apareciam em 6 documentos e quebravam
+palavras como "identificação" e "normativa".
+
 ## Verificação (depois da implementação, quando você pedir)
 
 - Ambiente: `poc/.venv/Scripts/python --version` mostra 3.14 e `pip install -r poc/requirements.txt`
