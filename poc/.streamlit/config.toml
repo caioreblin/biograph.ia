@@ -1,0 +1,8 @@
+[browser]
+# Não envia estatísticas de uso ao Streamlit.
+gatherUsageStats = false
+
+[server]
+# Não pergunta e-mail na primeira execução nem abre o navegador sozinho.
+headless = true
+port = 8501
